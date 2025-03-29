@@ -5,9 +5,8 @@
             "src": "wsgi.py",
             "use": "@vercel/python",
             "config": {
-                "maxLambdaSize": "250mb",
-                "runtime": "python3.11",
-                "includedFiles": ["templates/**", "static/**"]
+                "maxLambdaSize": "50mb",
+                "runtime": "python3.9"
             }
         }
     ],
@@ -22,10 +21,9 @@
         }
     ],
     "env": {
-        "FLASK_APP": "app.py",
+        "FLASK_APP": "minimal_app.py",
         "FLASK_ENV": "production",
         "PYTHONUNBUFFERED": "1",
-        "PYTHONPATH": ".",
         "FLASK_SECRET_KEY": "temporary-secure-key-replace-in-vercel-dashboard"
     }
 }
