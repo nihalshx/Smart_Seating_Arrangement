@@ -6,7 +6,7 @@
             "use": "@vercel/python",
             "config": {
                 "maxLambdaSize": "15mb",
-                "runtime": "python3.9"
+                "runtime": "python3.12"
             }
         }
     ],
@@ -24,6 +24,7 @@
         "FLASK_APP": "app.py",
         "FLASK_ENV": "production",
         "PYTHONUNBUFFERED": "1",
-        "PYTHONPATH": "."
+        "PYTHONPATH": ".",
+        "FLASK_SECRET_KEY": "temporary-secure-key-replace-in-vercel-dashboard"
     }
 }
