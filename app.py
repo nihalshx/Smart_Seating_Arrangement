@@ -19,50 +19,16 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from datetime import datetime, timedelta
 import werkzeug.utils
 import uuid
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+import shutil
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['SECRET_KEY'] = 'your-secure-key-here'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)  # Set session timeout
 
-# Ensure all response headers are secure
-@app.after_request
-def add_security_headers(response):
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    return response
-
-# Error handling for production
-@app.errorhandler(Exception)
-def handle_exception(e):
-    logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
-    return render_template('error.html', message="An unexpected error occurred"), 500
-
-# Serverless-friendly configuration
-app.config.update(
-    SECRET_KEY=os.environ.get('FLASK_SECRET_KEY', 'your-secure-random-key'),
-    PERMANENT_SESSION_LIFETIME=timedelta(hours=1),
-    SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax',
-    DATABASE_URL=os.environ.get('DATABASE_URL', 'your-database-url')
-)
-
-# Create an in-memory storage for file uploads with size limit
-MAX_STORAGE_ITEMS = 1000
-UPLOAD_STORAGE = {}
-
-def cleanup_old_storage():
-    """Remove old items if storage exceeds limit"""
-    if len(UPLOAD_STORAGE) > MAX_STORAGE_ITEMS:
-        # Remove oldest items
-        items_to_remove = len(UPLOAD_STORAGE) - MAX_STORAGE_ITEMS
-        for _ in range(items_to_remove):
-            UPLOAD_STORAGE.pop(next(iter(UPLOAD_STORAGE)))
+# Ensure upload folder exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Department colors for visualization
 DEPARTMENT_COLORS = {
@@ -233,16 +199,36 @@ def validate_csv(df):
     if len(df) < 1:
         raise ValueError("CSV file must contain at least one row of data")
 
+def cleanup_old_files(max_age_hours=24):
+    """Clean up files older than the specified age"""
+    try:
+        current_time = datetime.now()
+        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            # Get file modification time
+            file_time = datetime.fromtimestamp(os.path.getmtime(filepath))
+            # If file is older than max_age_hours, delete it
+            if (current_time - file_time) > timedelta(hours=max_age_hours):
+                if os.path.isfile(filepath):
+                    os.remove(filepath)
+    except Exception as e:
+        app.logger.error(f"Error during cleanup: {str(e)}")
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('error.html', message="Page not found"), 404
 
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('error.html', message="Internal server error"), 500
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    # Cleanup old files
+    cleanup_old_files()
+    
     if request.method == 'POST':
         try:
-            cleanup_old_storage()  # Clean up storage before processing new request
-            
             num_rooms = int(request.form.get('num_rooms', 4))           
             seats_per_room = int(request.form.get('seats_per_room', 25))
             
@@ -250,19 +236,14 @@ def index():
                 raise ValueError("Invalid room configuration")
             
             if 'generate_test' in request.form:
-                try:
-                    test_data = generate_sample_data(100)
-                    file_id = str(uuid.uuid4())
-                    csv_buffer = StringIO()
-                    test_data.to_csv(csv_buffer, index=False)
-                    UPLOAD_STORAGE[file_id] = csv_buffer.getvalue()
-                    return redirect(url_for('process_seating', 
-                                          file_id=file_id,
-                                          num_rooms=num_rooms,
-                                          seats_per_room=seats_per_room))
-                except Exception as e:
-                    logger.error(f"Error generating test data: {str(e)}", exc_info=True)
-                    raise ValueError("Failed to generate test data")
+                test_data = generate_sample_data(100)
+                filename = f"sample_data_{uuid.uuid4()}.csv"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                test_data.to_csv(filepath, index=False)
+                return redirect(url_for('process_seating', 
+                                      filename=filename,
+                                      num_rooms=num_rooms,
+                                      seats_per_room=seats_per_room))
             
             if 'file' not in request.files:
                 raise ValueError("No file part in the request")
@@ -274,32 +255,31 @@ def index():
             if not allowed_file(file.filename):
                 raise ValueError("Only CSV files are allowed")
             
+            # Create unique filename to prevent overwriting
+            file_ext = file.filename.rsplit('.', 1)[1].lower()
+            unique_filename = f"{str(uuid.uuid4())}.{file_ext}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            
+            # Save file
+            file.save(filepath)
+            
+            # Validate CSV content
             try:
-                # Read file content into memory with size limit (5MB)
-                file_content = file.read(5 * 1024 * 1024)  # 5MB limit
-                if len(file_content) >= 5 * 1024 * 1024:
-                    raise ValueError("File size exceeds 5MB limit")
-                
-                file_id = str(uuid.uuid4())
-                UPLOAD_STORAGE[file_id] = file_content.decode('utf-8')
-                
-                # Validate CSV content
-                df = pd.read_csv(StringIO(UPLOAD_STORAGE[file_id]))
+                df = pd.read_csv(filepath)
                 validate_csv(df)
-                
-                return redirect(url_for('process_seating',
-                                      file_id=file_id,
-                                      num_rooms=num_rooms,
-                                      seats_per_room=seats_per_room))
-            except UnicodeDecodeError:
-                raise ValueError("Invalid file encoding. Please ensure the file is UTF-8 encoded")
-            except pd.errors.EmptyDataError:
-                raise ValueError("The CSV file is empty")
-            except pd.errors.ParserError:
-                raise ValueError("Invalid CSV format")
+            except Exception as e:
+                # Clean up invalid file
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                raise ValueError(f"Invalid CSV file: {str(e)}")
+            
+            # If everything is valid, redirect to process
+            return redirect(url_for('process_seating',
+                                  filename=unique_filename,
+                                  num_rooms=num_rooms,
+                                  seats_per_room=seats_per_room))
             
         except Exception as e:
-            logger.error(f"Error in index route: {str(e)}", exc_info=True)
             flash(str(e), 'danger')
             return render_template('index.html')
     
@@ -308,16 +288,19 @@ def index():
 @app.route('/process')
 def process_seating():
     try:
-        file_id = request.args.get('file_id')
-        if not file_id or file_id not in UPLOAD_STORAGE:
-            raise ValueError("Invalid file ID")
+        filename = request.args.get('filename')
+        if not filename:
+            raise ValueError("No filename provided")
             
         num_rooms = int(request.args.get('num_rooms', 4))
         seats_per_room = int(request.args.get('seats_per_room', 25))
         
-        # Read CSV from memory storage
-        file_content = UPLOAD_STORAGE[file_id]
-        df = pd.read_csv(StringIO(file_content))
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if not os.path.exists(filepath):
+            raise ValueError("File not found")
+        
+        # Read and validate CSV
+        df = pd.read_csv(filepath)
         validate_csv(df)
         
         # Machine learning pipeline
@@ -334,8 +317,9 @@ def process_seating():
         model = LogisticRegression()
         model.fit(X_train, y_train)
         
+        # Extract probability for class 1 (will attend)
         probabilities = model.predict_proba(df[['Dept_Encoded', 'Year', 'Past_Attendance']])
-        df['Attendance_Probability'] = probabilities[:, 1]
+        df['Attendance_Probability'] = probabilities[:, 1]  # Get probability of class 1
         df['Predicted_Attendance'] = model.predict(df[['Dept_Encoded', 'Year', 'Past_Attendance']])
         
         attending_students = df[df['Predicted_Attendance'] == 1]
@@ -368,15 +352,12 @@ def process_seating():
             'departments': departments,
             'department_colors': department_colors,
             'attendance_probabilities': df['Attendance_Probability'].tolist(),
-            'file_id': file_id
+            'filename': filename
         }
         
+        # Store in session
         session['seating_data'] = seating_data
         session['session_id'] = session_id
-        
-        # Clean up storage
-        if file_id in UPLOAD_STORAGE:
-            del UPLOAD_STORAGE[file_id]
         
         return render_template('results.html',
                             total_students=len(df),
