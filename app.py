@@ -2,9 +2,6 @@
 from flask import Flask, render_template, request, redirect, url_for, send_file, flash, jsonify, session
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelEncoder
 import random
 import os
 import csv
@@ -20,12 +17,29 @@ from datetime import datetime, timedelta
 import werkzeug.utils
 import uuid
 import shutil
+import tempfile
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['SECRET_KEY'] = 'your-secure-key-here'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)  # Set session timeout
+# Check if running on Vercel (production)
+if os.environ.get('VERCEL_REGION'):
+    # Use /tmp for uploads in serverless environment
+    app.config['UPLOAD_FOLDER'] = '/tmp'
+    # More secure cookie settings for production
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+else:
+    # Use local uploads folder from environment variable or default
+    app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', 'uploads')
+    
+# Get configuration from environment variables
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secure-key-here')
+app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get('MAX_UPLOAD_SIZE_MB', 16)) * 1024 * 1024  # Default: 16MB
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=int(os.environ.get('SESSION_LIFETIME_HOURS', 1)))  # Default: 1 hour
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -111,7 +125,7 @@ def generate_sample_data(num_students):
         'Department': [random.choice(departments) for _ in range(num_students)],
         'Year': [random.choice(years) for _ in range(num_students)],
         'Past_Attendance': [random.uniform(0.5, 1.0) for _ in range(num_students)],
-        'Attended': [random.choice([0, 1]) for _ in range(num_students)]
+        'Attendance_Score': [random.uniform(0, 100) for _ in range(num_students)]
     }
     
     return pd.DataFrame(data)
@@ -169,7 +183,7 @@ def allowed_file(filename):
 
 def validate_csv(df):
     """Validate the CSV file structure and content"""
-    required_columns = {'Student_ID', 'Department', 'Year', 'Past_Attendance', 'Attended'}
+    required_columns = {'Student_ID', 'Department', 'Year', 'Past_Attendance'}
     
     # Check required columns
     if not required_columns.issubset(df.columns):
@@ -186,22 +200,56 @@ def validate_csv(df):
         raise ValueError("'Year' column must contain numeric values")
     if not pd.api.types.is_numeric_dtype(df['Past_Attendance']):
         raise ValueError("'Past_Attendance' column must contain numeric values")
-    if not pd.api.types.is_numeric_dtype(df['Attended']):
-        raise ValueError("'Attended' column must contain numeric values")
     
     # Validate value ranges
     if not (df['Past_Attendance'].between(0, 1).all()):
         raise ValueError("'Past_Attendance' values must be between 0 and 1")
-    if not (df['Attended'].isin([0, 1]).all()):
-        raise ValueError("'Attended' values must be 0 or 1")
     
     # Validate minimum number of rows
     if len(df) < 1:
         raise ValueError("CSV file must contain at least one row of data")
 
+def predict_attendance(df):
+    """Predict student attendance based on simple rules without ML
+    
+    Rules:
+    1. Students with past attendance > 0.8 are very likely to attend (0.9 probability)
+    2. Students with past attendance between 0.6-0.8 have moderate chance (0.7 probability)
+    3. Students with past attendance < 0.6 have lower chance (0.5 probability)
+    4. Year of study affects likelihood (seniors more likely to attend than freshmen)
+    """
+    # Create a copy to avoid modifying the original DataFrame
+    result_df = df.copy()
+    
+    # Initialize attendance probability column
+    result_df['Attendance_Probability'] = 0.0
+    
+    # Apply rule 1: Based on past attendance
+    result_df.loc[result_df['Past_Attendance'] > 0.8, 'Attendance_Probability'] = 0.9
+    result_df.loc[(result_df['Past_Attendance'] >= 0.6) & (result_df['Past_Attendance'] <= 0.8), 'Attendance_Probability'] = 0.7
+    result_df.loc[result_df['Past_Attendance'] < 0.6, 'Attendance_Probability'] = 0.5
+    
+    # Apply rule 2: Year of study bonus (seniors are more likely to attend)
+    # Add a small bonus for each year of study (0.02 per year)
+    year_bonus = (result_df['Year'] - 1) * 0.02
+    result_df['Attendance_Probability'] = result_df['Attendance_Probability'] + year_bonus
+    
+    # Ensure probability is between 0 and 1
+    result_df['Attendance_Probability'] = result_df['Attendance_Probability'].clip(0, 1)
+    
+    # Predict attendance (1 = will attend, 0 = won't attend)
+    # A student is predicted to attend if their probability is > 0.65
+    result_df['Predicted_Attendance'] = (result_df['Attendance_Probability'] > 0.65).astype(int)
+    
+    return result_df
+
 def cleanup_old_files(max_age_hours=24):
     """Clean up files older than the specified age"""
     try:
+        # Skip cleanup in serverless environment
+        if os.environ.get('VERCEL_REGION'):
+            return
+            
         current_time = datetime.now()
         for filename in os.listdir(app.config['UPLOAD_FOLDER']):
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -303,24 +351,8 @@ def process_seating():
         df = pd.read_csv(filepath)
         validate_csv(df)
         
-        # Machine learning pipeline
-        le = LabelEncoder()
-        df['Dept_Encoded'] = le.fit_transform(df['Department'])
-        
-        X_train, X_test, y_train, y_test = train_test_split(
-            df[['Dept_Encoded', 'Year', 'Past_Attendance']], 
-            df['Attended'], 
-            test_size=0.2, 
-            random_state=42
-        )
-        
-        model = LogisticRegression()
-        model.fit(X_train, y_train)
-        
-        # Extract probability for class 1 (will attend)
-        probabilities = model.predict_proba(df[['Dept_Encoded', 'Year', 'Past_Attendance']])
-        df['Attendance_Probability'] = probabilities[:, 1]  # Get probability of class 1
-        df['Predicted_Attendance'] = model.predict(df[['Dept_Encoded', 'Year', 'Past_Attendance']])
+        # Use rule-based prediction instead of ML
+        df = predict_attendance(df)
         
         attending_students = df[df['Predicted_Attendance'] == 1]
         
@@ -542,5 +574,41 @@ def credits():
 def manual():
     return render_template('manual.html')
 
+@app.route('/test-prediction', methods=['GET'])
+def test_prediction():
+    """Test endpoint to demonstrate rule-based attendance prediction"""
+    # Create some sample student data
+    sample_data = {
+        'Student_ID': ['STU001', 'STU002', 'STU003', 'STU004', 'STU005'],
+        'Department': ['CSE', 'ECE', 'ME', 'CSE', 'ECE'],
+        'Year': [1, 2, 3, 4, 1],
+        'Past_Attendance': [0.95, 0.75, 0.55, 0.85, 0.45]
+    }
+    
+    # Convert to DataFrame
+    df = pd.DataFrame(sample_data)
+    
+    # Apply prediction
+    result = predict_attendance(df)
+    
+    # Convert to dictionary for JSON response
+    prediction_result = {
+        'input_data': df.to_dict(orient='records'),
+        'prediction_result': result[['Student_ID', 'Department', 'Year', 
+                                    'Past_Attendance', 'Attendance_Probability', 
+                                    'Predicted_Attendance']].to_dict(orient='records'),
+        'rules_applied': [
+            'Students with past attendance > 0.8 are very likely to attend (0.9 probability)',
+            'Students with past attendance between 0.6-0.8 have moderate chance (0.7 probability)',
+            'Students with past attendance < 0.6 have lower chance (0.5 probability)',
+            'Seniors (higher year of study) get a bonus of 0.02 per year',
+            'Students with final probability > 0.65 are predicted to attend'
+        ]
+    }
+    
+    return jsonify(prediction_result)
+
+# For Vercel serverless deployment
 if __name__ == '__main__':
+    # Only run the app directly when not on Vercel
     app.run(debug=True)
