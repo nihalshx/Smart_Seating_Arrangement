@@ -22,13 +22,11 @@ import uuid
 import shutil
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['SECRET_KEY'] = 'your-secure-key-here'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)  # Set session timeout
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'your-secure-random-key-here')
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
 
-# Ensure upload folder exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# Create an in-memory storage for file uploads
+UPLOAD_STORAGE = {}
 
 # Department colors for visualization
 DEPARTMENT_COLORS = {
@@ -199,21 +197,6 @@ def validate_csv(df):
     if len(df) < 1:
         raise ValueError("CSV file must contain at least one row of data")
 
-def cleanup_old_files(max_age_hours=24):
-    """Clean up files older than the specified age"""
-    try:
-        current_time = datetime.now()
-        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            # Get file modification time
-            file_time = datetime.fromtimestamp(os.path.getmtime(filepath))
-            # If file is older than max_age_hours, delete it
-            if (current_time - file_time) > timedelta(hours=max_age_hours):
-                if os.path.isfile(filepath):
-                    os.remove(filepath)
-    except Exception as e:
-        app.logger.error(f"Error during cleanup: {str(e)}")
-
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('error.html', message="Page not found"), 404
@@ -224,9 +207,6 @@ def internal_server_error(e):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    # Cleanup old files
-    cleanup_old_files()
-    
     if request.method == 'POST':
         try:
             num_rooms = int(request.form.get('num_rooms', 4))           
@@ -237,11 +217,12 @@ def index():
             
             if 'generate_test' in request.form:
                 test_data = generate_sample_data(100)
-                filename = f"sample_data_{uuid.uuid4()}.csv"
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                test_data.to_csv(filepath, index=False)
+                file_id = str(uuid.uuid4())
+                csv_buffer = StringIO()
+                test_data.to_csv(csv_buffer, index=False)
+                UPLOAD_STORAGE[file_id] = csv_buffer.getvalue()
                 return redirect(url_for('process_seating', 
-                                      filename=filename,
+                                      file_id=file_id,
                                       num_rooms=num_rooms,
                                       seats_per_room=seats_per_room))
             
@@ -255,27 +236,20 @@ def index():
             if not allowed_file(file.filename):
                 raise ValueError("Only CSV files are allowed")
             
-            # Create unique filename to prevent overwriting
-            file_ext = file.filename.rsplit('.', 1)[1].lower()
-            unique_filename = f"{str(uuid.uuid4())}.{file_ext}"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-            
-            # Save file
-            file.save(filepath)
+            # Read file content into memory
+            file_content = file.read().decode('utf-8')
+            file_id = str(uuid.uuid4())
+            UPLOAD_STORAGE[file_id] = file_content
             
             # Validate CSV content
             try:
-                df = pd.read_csv(filepath)
+                df = pd.read_csv(StringIO(file_content))
                 validate_csv(df)
             except Exception as e:
-                # Clean up invalid file
-                if os.path.exists(filepath):
-                    os.remove(filepath)
                 raise ValueError(f"Invalid CSV file: {str(e)}")
             
-            # If everything is valid, redirect to process
             return redirect(url_for('process_seating',
-                                  filename=unique_filename,
+                                  file_id=file_id,
                                   num_rooms=num_rooms,
                                   seats_per_room=seats_per_room))
             
@@ -288,19 +262,16 @@ def index():
 @app.route('/process')
 def process_seating():
     try:
-        filename = request.args.get('filename')
-        if not filename:
-            raise ValueError("No filename provided")
+        file_id = request.args.get('file_id')
+        if not file_id or file_id not in UPLOAD_STORAGE:
+            raise ValueError("Invalid file ID")
             
         num_rooms = int(request.args.get('num_rooms', 4))
         seats_per_room = int(request.args.get('seats_per_room', 25))
         
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        if not os.path.exists(filepath):
-            raise ValueError("File not found")
-        
-        # Read and validate CSV
-        df = pd.read_csv(filepath)
+        # Read CSV from memory storage
+        file_content = UPLOAD_STORAGE[file_id]
+        df = pd.read_csv(StringIO(file_content))
         validate_csv(df)
         
         # Machine learning pipeline
@@ -317,9 +288,8 @@ def process_seating():
         model = LogisticRegression()
         model.fit(X_train, y_train)
         
-        # Extract probability for class 1 (will attend)
         probabilities = model.predict_proba(df[['Dept_Encoded', 'Year', 'Past_Attendance']])
-        df['Attendance_Probability'] = probabilities[:, 1]  # Get probability of class 1
+        df['Attendance_Probability'] = probabilities[:, 1]
         df['Predicted_Attendance'] = model.predict(df[['Dept_Encoded', 'Year', 'Past_Attendance']])
         
         attending_students = df[df['Predicted_Attendance'] == 1]
@@ -352,12 +322,15 @@ def process_seating():
             'departments': departments,
             'department_colors': department_colors,
             'attendance_probabilities': df['Attendance_Probability'].tolist(),
-            'filename': filename
+            'file_id': file_id
         }
         
-        # Store in session
         session['seating_data'] = seating_data
         session['session_id'] = session_id
+        
+        # Clean up storage
+        if file_id in UPLOAD_STORAGE:
+            del UPLOAD_STORAGE[file_id]
         
         return render_template('results.html',
                             total_students=len(df),
