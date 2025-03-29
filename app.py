@@ -19,14 +19,49 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from datetime import datetime, timedelta
 import werkzeug.utils
 import uuid
-import shutil
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'your-secure-random-key-here')
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
 
-# Create an in-memory storage for file uploads
+# Ensure all response headers are secure
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return response
+
+# Error handling for production
+@app.errorhandler(Exception)
+def handle_exception(e):
+    logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
+    return render_template('error.html', message="An unexpected error occurred"), 500
+
+# Serverless-friendly configuration
+app.config.update(
+    SECRET_KEY=os.environ.get('FLASK_SECRET_KEY', 'your-secure-random-key-here'),
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=1),
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax'
+)
+
+# Create an in-memory storage for file uploads with size limit
+MAX_STORAGE_ITEMS = 1000
 UPLOAD_STORAGE = {}
+
+def cleanup_old_storage():
+    """Remove old items if storage exceeds limit"""
+    if len(UPLOAD_STORAGE) > MAX_STORAGE_ITEMS:
+        # Remove oldest items
+        items_to_remove = len(UPLOAD_STORAGE) - MAX_STORAGE_ITEMS
+        for _ in range(items_to_remove):
+            UPLOAD_STORAGE.pop(next(iter(UPLOAD_STORAGE)))
 
 # Department colors for visualization
 DEPARTMENT_COLORS = {
@@ -201,14 +236,12 @@ def validate_csv(df):
 def page_not_found(e):
     return render_template('error.html', message="Page not found"), 404
 
-@app.errorhandler(500)
-def internal_server_error(e):
-    return render_template('error.html', message="Internal server error"), 500
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         try:
+            cleanup_old_storage()  # Clean up storage before processing new request
+            
             num_rooms = int(request.form.get('num_rooms', 4))           
             seats_per_room = int(request.form.get('seats_per_room', 25))
             
@@ -216,15 +249,19 @@ def index():
                 raise ValueError("Invalid room configuration")
             
             if 'generate_test' in request.form:
-                test_data = generate_sample_data(100)
-                file_id = str(uuid.uuid4())
-                csv_buffer = StringIO()
-                test_data.to_csv(csv_buffer, index=False)
-                UPLOAD_STORAGE[file_id] = csv_buffer.getvalue()
-                return redirect(url_for('process_seating', 
-                                      file_id=file_id,
-                                      num_rooms=num_rooms,
-                                      seats_per_room=seats_per_room))
+                try:
+                    test_data = generate_sample_data(100)
+                    file_id = str(uuid.uuid4())
+                    csv_buffer = StringIO()
+                    test_data.to_csv(csv_buffer, index=False)
+                    UPLOAD_STORAGE[file_id] = csv_buffer.getvalue()
+                    return redirect(url_for('process_seating', 
+                                          file_id=file_id,
+                                          num_rooms=num_rooms,
+                                          seats_per_room=seats_per_room))
+                except Exception as e:
+                    logger.error(f"Error generating test data: {str(e)}", exc_info=True)
+                    raise ValueError("Failed to generate test data")
             
             if 'file' not in request.files:
                 raise ValueError("No file part in the request")
@@ -236,24 +273,32 @@ def index():
             if not allowed_file(file.filename):
                 raise ValueError("Only CSV files are allowed")
             
-            # Read file content into memory
-            file_content = file.read().decode('utf-8')
-            file_id = str(uuid.uuid4())
-            UPLOAD_STORAGE[file_id] = file_content
-            
-            # Validate CSV content
             try:
-                df = pd.read_csv(StringIO(file_content))
+                # Read file content into memory with size limit (5MB)
+                file_content = file.read(5 * 1024 * 1024)  # 5MB limit
+                if len(file_content) >= 5 * 1024 * 1024:
+                    raise ValueError("File size exceeds 5MB limit")
+                
+                file_id = str(uuid.uuid4())
+                UPLOAD_STORAGE[file_id] = file_content.decode('utf-8')
+                
+                # Validate CSV content
+                df = pd.read_csv(StringIO(UPLOAD_STORAGE[file_id]))
                 validate_csv(df)
-            except Exception as e:
-                raise ValueError(f"Invalid CSV file: {str(e)}")
-            
-            return redirect(url_for('process_seating',
-                                  file_id=file_id,
-                                  num_rooms=num_rooms,
-                                  seats_per_room=seats_per_room))
+                
+                return redirect(url_for('process_seating',
+                                      file_id=file_id,
+                                      num_rooms=num_rooms,
+                                      seats_per_room=seats_per_room))
+            except UnicodeDecodeError:
+                raise ValueError("Invalid file encoding. Please ensure the file is UTF-8 encoded")
+            except pd.errors.EmptyDataError:
+                raise ValueError("The CSV file is empty")
+            except pd.errors.ParserError:
+                raise ValueError("Invalid CSV format")
             
         except Exception as e:
+            logger.error(f"Error in index route: {str(e)}", exc_info=True)
             flash(str(e), 'danger')
             return render_template('index.html')
     
