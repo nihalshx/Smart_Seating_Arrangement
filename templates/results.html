@@ -1,90 +1,2079 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seating Arrangement Results</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
     <style>
+        :root[data-theme="dark"] {
+            --dark-bg: #121212;
+            --darker-bg: #0a0a0a;
+            --card-bg: #1e1e1e;
+            --accent-color: #FC350B;
+            --accent-hover: #e62e09;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --hover-bg: rgba(252, 53, 11, 0.05);
+            --gradient-start: #FC350B;
+            --gradient-end: #e62e09;
+            --home-bg: #1a1a1a;
+            --home-hover: #242424;
+            --home-border: rgba(255, 255, 255, 0.1);
+            --home-text: #ffffff;
+            --home-icon: #FC350B;
+            --theme-transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --theme-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --theme-blur: blur(10px);
+            --nav-bg: rgba(26, 26, 26, 0.8);
+            --nav-border: #FC350B;
+            --nav-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --nav-item-hover: rgba(252, 53, 11, 0.1);
+            --nav-text: #ffffff;
+            --nav-text-hover: #FC350B;
+        }
+
+        :root[data-theme="light"] {
+            --dark-bg: #FEF1E1;
+            --darker-bg: #f5e4d3;
+            --card-bg: #ffffff;
+            --accent-color: #FC350B;
+            --accent-hover: #e62e09;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --border-color: rgba(252, 53, 11, 0.1);
+            --shadow-color: rgba(252, 53, 11, 0.1);
+            --hover-bg: rgba(252, 53, 11, 0.05);
+            --gradient-start: #FC350B;
+            --gradient-end: #e62e09;
+            --home-bg: #ffffff;
+            --home-hover: #f8f9fa;
+            --home-border: rgba(252, 53, 11, 0.1);
+            --home-text: #1a1a1a;
+            --home-icon: #FC350B;
+            --theme-transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --theme-shadow: 0 4px 20px rgba(252, 53, 11, 0.1);
+            --theme-blur: blur(10px);
+            --nav-bg: rgba(255, 255, 255, 0.8);
+            --nav-border: #FC350B;
+            --nav-shadow: 0 4px 20px rgba(252, 53, 11, 0.1);
+            --nav-item-hover: rgba(252, 53, 11, 0.1);
+            --nav-text: #1a1a1a;
+            --nav-text-hover: #FC350B;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+
+        .navbar {
+            background: var(--nav-bg);
+            box-shadow: var(--nav-shadow);
+            border-bottom: 2px solid var(--nav-border);
+            transition: var(--theme-transition);
+            backdrop-filter: var(--theme-blur);
+            -webkit-backdrop-filter: var(--theme-blur);
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            transform: translateY(0);
         }
+
+        .navbar.navbar-scrolled {
+            padding: 0.7rem 0;
+            background: var(--nav-bg);
+            border-bottom: 2px solid var(--nav-border);
+            box-shadow: var(--nav-shadow);
+        }
+
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .logo-icon {
+            font-size: 2.2rem;
+            background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .logo-main {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-sub {
+            font-size: 0.8rem;
+            font-weight: 500;
+            opacity: 0.8;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: slideInRight 1s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-sub::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: translateX(-100%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 0.8;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes shimmer {
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .navbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            color: var(--nav-text);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            position: relative;
+            transition: var(--theme-transition);
+            border-radius: 8px;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--nav-text-hover);
+            background: var(--nav-item-hover);
+            transform: translateY(-2px);
+        }
+
+        .nav-link i {
+            margin-right: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-link:hover i {
+            transform: translateX(3px);
+        }
+
+        .dropdown-menu {
+            background: var(--home-bg);
+            border: 1px solid var(--home-border);
+            box-shadow: 0 4px 15px var(--shadow-color);
+            border-radius: 12px;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .dropdown-item {
+            color: var(--home-text);
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .dropdown-item:hover {
+            background: var(--hover-bg);
+            color: var(--accent-color);
+            transform: translateX(5px);
+        }
+
+        .dropdown-item i {
+            width: 20px;
+            text-align: center;
+            margin-right: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown-item:hover i {
+            transform: scale(1.2);
+        }
+
+        .navbar-toggler {
+            border: none;
+            padding: 0.5rem;
+            color: var(--home-text);
+            transition: all 0.3s ease;
+        }
+
+        .navbar-toggler:hover {
+            color: var(--accent-color);
+        }
+
+        .navbar-toggler:focus {
+            box-shadow: none;
+        }
+
+        @media (max-width: 991px) {
+            .container.py-5 {
+                padding-top: 5rem !important;
+            }
+
+            .navbar-collapse {
+                background: var(--nav-bg);
+                padding: 1rem;
+                border-radius: 12px;
+                margin-top: 1rem;
+                box-shadow: var(--nav-shadow);
+                border: 1px solid var(--nav-border);
+            }
+
+            .navbar-nav {
+                gap: 0.5rem;
+            }
+
+            .nav-link {
+                padding: 0.8rem 1.2rem;
+                text-align: center;
+            }
+
+            .dropdown-menu {
+                background: var(--darker-bg);
+                border: none;
+                margin-top: 0;
+                padding: 0;
+            }
+        }
+
+        .theme-toggle {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--card-bg);
+            margin-left: 1rem;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1) rotate(180deg);
+            border-color: var(--accent-color);
+        }
+
+        .theme-toggle i {
+            font-size: 1.2rem;
+            background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @media (max-width: 991px) {
+            .navbar .theme-toggle {
+                margin: 0.5rem 0;
+                width: 35px;
+                height: 35px;
+            }
+            
+            .navbar .theme-toggle i {
+                font-size: 1rem;
+            }
+        }
+
+        .stats-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px var(--shadow-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(252, 53, 11, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        .stats-card:hover::before {
+            transform: translateX(100%);
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px var(--shadow-color);
+            border-color: var(--accent-color);
+        }
+
+        .stats-number {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-label {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
         .room-container {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #eee;
-            border-radius: 5px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .seat-row {
+
+        .room-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(252, 53, 11, 0.05), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        .room-container:hover::before {
+            transform: translateX(100%);
+        }
+
+        .room-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px var(--shadow-color);
+            border-color: var(--accent-color);
+        }
+
+        .room-title {
+            color: var(--accent-color);
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 600;
+        }
+
+        .room-title i {
+            font-size: 1.5rem;
+            background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .seat {
+            width: 120px;
+            height: 100px;
+            margin: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+            text-align: center;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px var(--shadow-color);
+        }
+
+        .seat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(252, 53, 11, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        .seat:hover::before {
+            transform: translateX(100%);
+        }
+
+        .seat:hover {
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 8px 25px var(--shadow-color);
+            z-index: 10;
+            border-color: var(--accent-color);
+        }
+
+        .department-legend {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--card-bg);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px var(--shadow-color);
         }
-        .seat {
-            padding: 10px;
-            background-color: #f8f8f8;
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            background: var(--darker-bg);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            font-weight: 500;
+        }
+
+        .legend-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px var(--shadow-color);
+            border-color: var(--accent-color);
+            background: var(--hover-bg);
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 5px var(--shadow-color);
+        }
+
+        .legend-item:hover .legend-color {
+            transform: scale(1.2);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+            color: var(--dark-bg);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px var(--shadow-color);
+            background: linear-gradient(45deg, var(--gradient-end), var(--gradient-start));
+        }
+
+        .search-box {
+            background: var(--darker-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            color: var(--text-primary);
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(252, 53, 11, 0.2);
+        }
+
+        .seat-info {
+            position: fixed;
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px var(--shadow-color);
+            z-index: 1000;
+            display: none;
+            max-width: 250px;
+            border: 1px solid var(--accent-color);
+            color: var(--text-primary);
+            animation: fadeIn 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .seat-info strong {
+            color: var(--accent-color);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid var(--darker-bg);
+            border-top: 6px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Theme transition */
+        * {
+            transition: background-color 0.3s ease, 
+                        color 0.3s ease, 
+                        border-color 0.3s ease, 
+                        box-shadow 0.3s ease,
+                        transform 0.3s ease;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--darker-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
             border-radius: 5px;
-            border: 1px solid #ddd;
-            text-align: center;
-            min-width: 120px;
         }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Search & Export Section */
+        .search-export-section {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--nav-shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .search-box {
+            background: var(--darker-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.8rem 1.2rem;
+            color: var(--text-primary);
+            width: 100%;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .search-box:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(252, 53, 11, 0.2);
+            outline: none;
+        }
+
+        .search-box::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .export-btn {
+            background: var(--darker-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.8rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .export-btn:hover {
+            background: var(--hover-bg);
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .export-btn i {
+            color: var(--accent-color);
+            font-size: 1.1rem;
+        }
+
+        /* Department Legend */
+        .legend-section {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--nav-shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .legend-title {
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem;
+            background: var(--darker-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .legend-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px var(--shadow-color);
+            border-color: var(--accent-color);
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid var(--border-color);
+        }
+
+        .legend-text {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .legend-count {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-left: auto;
+            background: var(--hover-bg);
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+        }
+
+        .legend-item.active {
+            background: var(--hover-bg);
+            border-color: var(--accent-color);
+        }
+
+        .legend-item.active .legend-text {
+            color: var(--accent-color);
+        }
+
+        .legend-item.active .legend-count {
+            background: var(--accent-color);
+            color: var(--text-primary);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 991px) {
+            .container.py-5 {
+                padding-top: 5rem !important;
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+
+            .export-buttons {
+                flex-direction: column;
+            }
+
+            .export-btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container.py-5 {
+                padding-top: 4.5rem !important;
+            }
+
+            .search-export-section,
+            .legend-section,
+            .room-container {
+                padding: 1rem;
+            }
+
+            .legend-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+        }
+
+        @media (max-width: 576px) {
+            .container.py-5 {
+                padding-top: 4rem !important;
+            }
+
+            .stats-card {
+                padding: 1rem;
+            }
+
+            .stats-number {
+                font-size: 2.5rem;
+            }
+
+            .stats-label {
+                font-size: 1rem;
+            }
+        }
+
+        /* Main container styles */
+        .container.py-5 {
+            padding-top: 6rem !important;
+            padding-bottom: 2rem !important;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Card spacing and layout */
+        .stats-card {
+            margin-bottom: 1rem;
+            height: 100%;
+        }
+
+        .row.mb-5 {
+            margin-top: 1rem;
+            margin-bottom: 2rem !important;
+        }
+
+        .col-md-3 {
+            margin-bottom: 1rem;
+        }
+
+        /* Thank You Section */
+        .thank-you-section {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .thank-you-title {
+            color: var(--accent-color);
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .thank-you-message {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .thank-you-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* Add these styles to your existing CSS */
+        .download-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .download-popup-content {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 20px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            animation: slideUp 0.3s ease;
+            max-width: 90%;
+            width: 400px;
+        }
+
+        .download-popup-content i {
+            font-size: 3rem;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        .download-popup-content h3 {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .download-popup-content p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .download-popup-content button {
+            background: var(--accent-color);
+            color: var(--text-primary);
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .download-popup-content button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Add these styles to your existing CSS */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1050;
+            overflow-y: auto;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            max-width: 800px;
+            margin: 2rem auto;
+            position: relative;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px var(--shadow-color);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: all 0.3s ease;
+            border-radius: 50%;
+        }
+
+        .close-modal:hover {
+            color: var(--accent-color);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group label i {
+            color: var(--accent-color);
+        }
+
+        .form-control {
+            background: var(--darker-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 0.8rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(252, 53, 11, 0.2);
+            outline: none;
+        }
+
+        .form-text {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 991px) {
+            .navbar .theme-toggle {
+                margin: 0.5rem 0;
+                width: 35px;
+                height: 35px;
+            }
+            
+            .navbar .theme-toggle i {
+                font-size: 1rem;
+            }
+
+            .modal-content {
+                margin: 1rem;
+            }
+        }
+
+        /* Add these styles to your existing CSS */
+        .btn-primary {
+            background: var(--accent-color);
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            color: var(--home-text);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+
+        .btn-primary i {
+            margin-right: 0.5rem;
+        }
+
+        /* Update home button styles */
+        .home-button {
+            background: var(--home-bg);
+            color: var(--home-text);
+            border: 1px solid var(--home-border);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 500;
+            box-shadow: 0 2px 10px var(--shadow-color);
+        }
+
+        .home-button:hover {
+            background: var(--home-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px var(--shadow-color);
+            color: var(--home-text);
+            border-color: var(--accent-color);
+        }
+
+        .home-button i {
+            color: var(--home-icon);
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .home-button:hover i {
+            transform: translateX(-3px);
+        }
+
+        /* Update dropdown menu styles */
+        .dropdown-menu {
+            background: var(--home-bg);
+            border: 1px solid var(--home-border);
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+
+        .dropdown-item {
+            color: var(--home-text);
+        }
+
+        .dropdown-item:hover {
+            background: var(--home-hover);
+            color: var(--accent-color);
+        }
+
+        /* Update modal styles */
+        .modal-content {
+            background: var(--home-bg);
+            border: 1px solid var(--home-border);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--home-border);
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--home-border);
+        }
+
+        .modal-title {
+            color: var(--home-text);
+        }
+
+        .close {
+            color: var(--home-text);
+        }
+
+        .close:hover {
+            color: var(--accent-color);
+        }
+
+        /* Update form elements */
+        .form-control {
+            background: var(--darker-bg);
+            border: 1px solid var(--home-border);
+            color: var(--home-text);
+        }
+
+        .form-control:focus {
+            background: var(--darker-bg);
+            border-color: var(--accent-color);
+            color: var(--home-text);
+        }
+
+        .form-label {
+            color: var(--home-text);
+        }
+
+        /* Update buttons */
+        .btn-primary {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--home-text);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: var(--darker-bg);
+            border: 1px solid var(--home-border);
+            color: var(--home-text);
+        }
+
+        .btn-secondary:hover {
+            background: var(--home-hover);
+            border-color: var(--accent-color);
+        }
+
+        /* Update file upload area */
+        .upload-area {
+            background: var(--darker-bg);
+            border: 2px dashed var(--home-border);
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-color);
+        }
+
+        /* Update table styles */
+        .table {
+            color: var(--home-text);
+        }
+
+        .table thead th {
+            background: var(--darker-bg);
+            border-bottom: 1px solid var(--home-border);
+        }
+
+        .table td {
+            border-color: var(--home-border);
+        }
+
+        /* Update alert styles */
+        .alert {
+            background: var(--darker-bg);
+            border: 1px solid var(--home-border);
+            color: var(--home-text);
+        }
+
+        .alert-info {
+            background: rgba(252, 53, 11, 0.1);
+            border-color: var(--accent-color);
+        }
+
+        /* Update text colors */
+        .text-muted {
+            color: var(--text-secondary) !important;
+        }
+
+        .text-success {
+            color: var(--accent-color) !important;
+        }
+
+        .text-danger {
+            color: #ff4444 !important;
+        }
+
+        /* Thank You Card Styles */
+        .thank-you-card {
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="my-4">Seating Arrangement Results</h1>
-        
-        <div class="alert alert-info">
-            <p><strong>Total Students:</strong> {{ total_students }}</p>
-            <p><strong>Expected Attendance:</strong> {{ attending_count }}</p>
-        </div>
-        
-        <div class="d-flex justify-content-between mb-4">
-            <a href="{{ url_for('index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Back
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <div class="brand-logo">
+                    <i class="fas fa-chair logo-icon"></i>
+                    <div class="logo-text">
+                        <span class="logo-main">Smart Seating</span>
+                        <span class="logo-sub">AI-Powered Exam Management</span>
+                    </div>
+                </div>
             </a>
-            <div>
-                <a href="{{ url_for('download_csv') }}" class="btn btn-success me-2">
-                    <i class="fas fa-file-csv me-1"></i> Download CSV
-                </a>
-                <a href="{{ url_for('download_pdf') }}" class="btn btn-danger">
-                    <i class="fas fa-file-pdf me-1"></i> Download PDF
-                </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <button class="btn btn-primary me-3" onclick="showUploadModal()">
+                            <i class="fas fa-upload me-1"></i>Next File
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/manual">Manual</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/credits">Credits</a>
+                    </li>
+                    <li class="nav-item">
+                        <div class="theme-toggle" id="themeToggle">
+                            <i class="fas fa-moon"></i>
+                        </div>
+                    </li>
+                </ul>
             </div>
         </div>
-        
-        {% for room_id, room_data in seat_maps.items() %}
-        <div class="room-container">
-            <h3>{{ room_id }} ({{ room_data.total_seats }} students)</h3>
-            
-            {% for row in room_data.seats %}
-            <div class="seat-row">
-                {% for seat in row %}
-                <div class="seat" style="background-color: {{ department_colors[seat.department] }}">
-                    <div><strong>Seat {{ seat.seat_number }}</strong></div>
-                    <div>{{ seat.student_id }}</div>
-                    <div><small>{{ seat.department }}</small></div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container py-5">
+        <!-- Thank You Section -->
+        <div class="thank-you-section">
+            <i class="fas fa-check-circle thank-you-icon"></i>
+            <h2 class="thank-you-title">Thank You!</h2>
+            <p class="thank-you-message">
+                Your seating arrangement has been successfully generated. You can now view, search, and export the results.
+                We hope this helps make your exam management process more efficient and organized.
+            </p>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-5">
+            <div class="col-md-3">
+                <div class="stats-card animate__animated animate__fadeIn">
+                    <div class="stats-number">{{ total_students }}</div>
+                    <div class="stats-label">Total Students</div>
                 </div>
-                {% endfor %}
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card animate__animated animate__fadeIn animate__delay-1s">
+                    <div class="stats-number">{{ attending_count }}</div>
+                    <div class="stats-label">Expected Attendance</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card animate__animated animate__fadeIn animate__delay-2s">
+                    <div class="stats-number">{{ num_rooms * seats_per_room }}</div>
+                    <div class="stats-label">Total Capacity</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card animate__animated animate__fadeIn animate__delay-3s">
+                    <div class="stats-number">{{ "%.1f"|format(attending_count / (num_rooms * seats_per_room) * 100) }}%</div>
+                    <div class="stats-label">Capacity Utilization</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Export Section -->
+        <div class="search-export-section">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <input type="text" 
+                           class="search-box" 
+                           placeholder="Search by Student ID or Department..."
+                           id="searchInput">
+                </div>
+                <div class="col-md-6">
+                    <div class="export-buttons">
+                        <button class="export-btn" onclick="exportToCSV()">
+                            <i class="fas fa-file-csv"></i>
+                            Export CSV
+                        </button>
+                        <a href="/download/pdf" class="export-btn" onclick="showLoading()">
+                            <i class="fas fa-file-pdf"></i>
+                            Export PDF
+                        </a>
+                        <button class="export-btn" onclick="exportToExcel()">
+                            <i class="fas fa-file-excel"></i>
+                            Export Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Department Legend -->
+        <div class="legend-section">
+            <h3 class="legend-title">Department Legend</h3>
+            <div class="legend-grid" id="departmentLegend">
+                    {% for dept in departments %}
+                    <div class="legend-item" onclick="filterDepartment('{{ dept }}')">
+                        <div class="legend-color" style="background-color: {{ department_colors[dept] }}"></div>
+                    <span class="legend-text">{{ dept }}</span>
+                    <span class="legend-count" id="count-{{ dept }}">0</span>
+                    </div>
+                    {% endfor %}
+            </div>
+        </div>
+
+        <!-- Room Layouts -->
+        <div class="row">
+            {% for room, data in seat_maps.items() %}
+            <div class="col-md-6 mb-5 animate__animated animate__fadeIn animate__delay-{{ loop.index + 6 }}s">
+                <div class="room-container">
+                    <h3 class="room-title">
+                        <i class="fas fa-door-open"></i>
+                        Room {{ data.room_number }}
+                    </h3>
+                    <div class="seating-layout">
+                        {% for row in data.seats %}
+                        <div class="row mb-4">
+                            {% for seat in row %}
+                            <div class="col">
+                                <div class="seat" 
+                                     style="background-color: {{ department_colors[seat.department] }}"
+                                     data-student="{{ seat.student_id }}"
+                                     data-dept="{{ seat.department }}"
+                                     onmouseover="showSeatInfo(this)"
+                                     onmouseout="hideSeatInfo()">
+                                    <div>
+                                        <div>Seat {{ seat.seat_number }}</div>
+                                        <div>{{ seat.student_id }}</div>
+                                        <div>{{ seat.department }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
             {% endfor %}
         </div>
-        {% endfor %}
     </div>
-    
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Seat Info Tooltip -->
+    <div id="seatInfo" class="seat-info"></div>
+
+    <!-- Add this right before the closing </body> tag -->
+    <div id="downloadPopup" class="download-popup">
+        <div class="download-popup-content">
+            <i class="fas fa-check-circle"></i>
+            <h3>Download Complete!</h3>
+            <p>Your file has been downloaded successfully.</p>
+            <button onclick="closeDownloadPopup()">Close</button>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-upload"></i> Upload Next File</h3>
+                <button class="close-modal" onclick="closeUploadModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="nextFileForm" action="{{ url_for('process_next_file') }}" method="POST" enctype="multipart/form-data" onsubmit="return validateNextFileForm(event)">
+                    <div class="form-group">
+                        <label for="next_num_rooms">
+                            <i class="fas fa-door-open"></i> Number of Rooms
+                        </label>
+                        <input type="number" 
+                               id="next_num_rooms" 
+                               name="num_rooms" 
+                               required 
+                               min="1" 
+                               max="20"
+                               value="4"
+                               class="form-control">
+                        <small class="form-text">Enter number of rooms (1-20)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="next_seats_per_room">
+                            <i class="fas fa-chair"></i> Seats per Room
+                        </label>
+                        <input type="number" 
+                               id="next_seats_per_room" 
+                               name="seats_per_room" 
+                               required 
+                               min="1" 
+                               max="100"
+                               value="25"
+                               class="form-control">
+                        <small class="form-text">Enter seats per room (1-100)</small>
+                    </div>
+
+                    <div class="upload-area" id="nextDropZone">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <h3>Drag & Drop your CSV file here</h3>
+                        <p>or</p>
+                        <input type="file" 
+                               id="nextFileInput" 
+                               name="file" 
+                               accept=".csv" 
+                               class="d-none"
+                               onchange="validateNextFile(this)">
+                        <button type="button" class="btn" onclick="document.getElementById('nextFileInput').click()">
+                            <i class="fas fa-folder-open"></i> Browse Files
+                        </button>
+                        <div id="nextSelectedFile" class="mt-3 d-none">
+                            <p class="text-success mb-0">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <span id="nextFileName"></span>
+                            </p>
+                        </div>
+                        <div id="nextFileError" class="mt-2 text-danger d-none"></div>
+                        <div id="nextCsvPreview" class="mt-4 d-none">
+                            <h4 class="mb-3">CSV Preview</h4>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr id="nextPreviewHeader"></tr>
+                                    </thead>
+                                    <tbody id="nextPreviewBody"></tbody>
+                                </table>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <small class="text-muted">Showing first 5 rows</small>
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="toggleNextPreview()">
+                                    <i class="fas fa-eye-slash"></i> Hide Preview
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-group mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload & Process
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="closeUploadModal()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        // Loading overlay
+        function showLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'flex';
+            overlay.style.opacity = '0';
+            requestAnimationFrame(() => {
+                overlay.style.opacity = '1';
+            });
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 300);
+        }
+
+        // Seat information
+        function showSeatInfo(seat) {
+            const info = document.getElementById('seatInfo');
+            const rect = seat.getBoundingClientRect();
+            
+            info.innerHTML = `
+                <strong>Student ID:</strong> ${seat.dataset.student}<br>
+                <strong>Department:</strong> ${seat.dataset.dept}<br>
+                <strong>Seat Number:</strong> ${seat.querySelector('div div:first-child').textContent}
+            `;
+            
+            info.style.left = `${rect.right + 15}px`;
+            info.style.top = `${rect.top}px`;
+            info.style.display = 'block';
+            info.style.opacity = '0';
+            info.style.transform = 'translateY(10px)';
+            
+            requestAnimationFrame(() => {
+                info.style.opacity = '1';
+                info.style.transform = 'translateY(0)';
+            });
+        }
+
+        function hideSeatInfo() {
+            const info = document.getElementById('seatInfo');
+            info.style.opacity = '0';
+            setTimeout(() => {
+                info.style.display = 'none';
+            }, 200);
+        }
+
+        // Enhanced search functionality
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const searchTerm = e.target.value.toLowerCase();
+                const seats = document.querySelectorAll('.seat');
+                
+                requestAnimationFrame(() => {
+                    seats.forEach(seat => {
+                        const studentId = seat.dataset.student.toLowerCase();
+                        const department = seat.dataset.dept.toLowerCase();
+                        const match = studentId.includes(searchTerm) || department.includes(searchTerm);
+                        
+                        seat.style.transition = 'all 0.3s ease';
+                        if (match) {
+                            seat.style.opacity = '1';
+                            seat.style.transform = 'scale(1) translateY(0)';
+                            seat.style.borderColor = 'var(--accent-color)';
+                        } else {
+                            seat.style.opacity = '0.3';
+                            seat.style.transform = 'scale(0.95) translateY(5px)';
+                            seat.style.borderColor = 'var(--border-color)';
+                        }
+                    });
+                });
+            }, 50);
+        });
+
+        // Enhanced department filtering
+        let activeDepartment = null;
+        function filterDepartment(dept) {
+            const legendItems = document.querySelectorAll('.legend-item');
+            const seats = document.querySelectorAll('.seat');
+            
+            // Toggle active state
+            if (activeDepartment === dept) {
+                activeDepartment = null;
+                legendItems.forEach(item => item.classList.remove('active'));
+                seats.forEach(seat => {
+                    seat.style.transition = 'all 0.3s ease';
+                    seat.style.opacity = '1';
+                    seat.style.transform = 'scale(1) translateY(0)';
+                    seat.style.borderColor = 'var(--border-color)';
+                });
+                return;
+            }
+            
+            // Set new active department
+            activeDepartment = dept;
+            legendItems.forEach(item => {
+                const deptText = item.querySelector('.legend-text').textContent;
+                item.classList.toggle('active', deptText === dept);
+            });
+            
+            requestAnimationFrame(() => {
+                seats.forEach(seat => {
+                    seat.style.transition = 'all 0.3s ease';
+                    if (seat.dataset.dept === dept) {
+                        seat.style.opacity = '1';
+                        seat.style.transform = 'scale(1) translateY(0)';
+                        seat.style.borderColor = 'var(--accent-color)';
+                    } else {
+                        seat.style.opacity = '0.3';
+                        seat.style.transform = 'scale(0.95) translateY(5px)';
+                        seat.style.borderColor = 'var(--border-color)';
+                    }
+                });
+            });
+        }
+
+        // Reset filters when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.legend-item') && !e.target.closest('#searchInput')) {
+                const seats = document.querySelectorAll('.seat');
+                const legendItems = document.querySelectorAll('.legend-item');
+                
+                requestAnimationFrame(() => {
+                    seats.forEach(seat => {
+                        seat.style.transition = 'all 0.3s ease';
+                        seat.style.opacity = '1';
+                        seat.style.transform = 'scale(1) translateY(0)';
+                        seat.style.borderColor = 'var(--border-color)';
+                    });
+                    legendItems.forEach(item => item.classList.remove('active'));
+                });
+                activeDepartment = null;
+            }
+        });
+
+        // Enhanced export functionality
+        function exportToExcel() {
+            showLoading();
+            try {
+                const wb = XLSX.utils.book_new();
+                const seatingData = {{ seating_data|safe }};
+                
+                Object.entries(seatingData.rooms).forEach(([roomName, students]) => {
+                    const ws = XLSX.utils.json_to_sheet(students.map((student, index) => ({
+                        'Room': roomName,
+                        'Seat Number': index + 1,
+                        'Student ID': student.Student_ID,
+                        'Department': student.Department
+                    })));
+                    XLSX.utils.book_append_sheet(wb, ws, roomName);
+                });
+                
+                XLSX.writeFile(wb, `seating_arrangement_${new Date().toISOString().split('T')[0]}.xlsx`);
+                hideLoading();
+                showDownloadPopup();
+            } catch (error) {
+                console.error('Error exporting to Excel:', error);
+                showFlashMessage('Error exporting to Excel. Please try again.', 'danger');
+                hideLoading();
+            }
+        }
+
+        // Enhanced CSV export functionality
+        function exportToCSV() {
+            showLoading();
+            try {
+                const seatingData = {{ seating_data|safe }};
+                let csvContent = "Room,Seat Number,Student ID,Department\n";
+                
+                Object.entries(seatingData.rooms).forEach(([roomName, students]) => {
+                    students.forEach((student, index) => {
+                        csvContent += `${roomName},${index + 1},${student.Student_ID},${student.Department}\n`;
+                    });
+                });
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', `seating_arrangement_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                hideLoading();
+                showDownloadPopup();
+            } catch (error) {
+                console.error('Error exporting to CSV:', error);
+                showFlashMessage('Error exporting to CSV. Please try again.', 'danger');
+                hideLoading();
+            }
+        }
+
+        // Flash message functionality
+        function showFlashMessage(message, type) {
+            const flashMessage = document.createElement('div');
+            flashMessage.className = `flash-message ${type}`;
+            flashMessage.textContent = message;
+            document.body.appendChild(flashMessage);
+            
+            setTimeout(() => {
+                flashMessage.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(flashMessage);
+                }, 300);
+            }, 3000);
+        }
+
+        function printLayout() {
+            window.print();
+        }
+
+        // Add this function to calculate department counts
+        function calculateDepartmentCounts() {
+            const seatingData = {{ seating_data|safe }};
+            const departmentCounts = {};
+            
+            // Initialize counts for all departments
+            {{ departments|tojson|safe }}.forEach(dept => {
+                departmentCounts[dept] = 0;
+            });
+            
+            // Count students in each department
+            Object.values(seatingData.rooms).forEach(students => {
+                students.forEach(student => {
+                    departmentCounts[student.Department]++;
+                });
+            });
+            
+            // Update the count displays
+            Object.entries(departmentCounts).forEach(([dept, count]) => {
+                const countElement = document.getElementById(`count-${dept}`);
+                if (countElement) {
+                    countElement.textContent = count;
+                }
+            });
+        }
+
+        // Call the function when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            calculateDepartmentCounts();
+        });
+
+        // Add these functions to your existing JavaScript
+        function showDownloadPopup() {
+            const popup = document.getElementById('downloadPopup');
+            popup.style.display = 'flex';
+            popup.style.opacity = '0';
+            requestAnimationFrame(() => {
+                popup.style.opacity = '1';
+            });
+        }
+
+        function closeDownloadPopup() {
+            const popup = document.getElementById('downloadPopup');
+            popup.style.opacity = '0';
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 300);
+        }
+
+        // Update the PDF download link
+        document.querySelector('a[href="/download/pdf"]').addEventListener('click', function(e) {
+            e.preventDefault();
+            showLoading();
+            window.location.href = this.href;
+            setTimeout(() => {
+                hideLoading();
+                showDownloadPopup();
+            }, 1000);
+        });
+
+        // Add these functions to your existing JavaScript
+        function showUploadModal() {
+            document.getElementById('uploadModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            // Reset form
+            document.getElementById('nextFileForm').reset();
+            document.getElementById('nextSelectedFile').classList.add('d-none');
+            document.getElementById('nextFileError').classList.add('d-none');
+            document.getElementById('nextCsvPreview').classList.add('d-none');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('uploadModal');
+            if (event.target === modal) {
+                closeUploadModal();
+            }
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeUploadModal();
+            }
+        });
+
+        // Next File Upload Handling
+        const nextDropZone = document.getElementById('nextDropZone');
+        const nextFileInput = document.getElementById('nextFileInput');
+
+        nextDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            nextDropZone.style.borderColor = 'var(--accent-color)';
+            nextDropZone.style.transform = 'scale(1.02)';
+        });
+
+        nextDropZone.addEventListener('dragleave', () => {
+            nextDropZone.style.borderColor = 'var(--border-color)';
+            nextDropZone.style.transform = 'scale(1)';
+        });
+
+        nextDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            nextDropZone.style.borderColor = 'var(--border-color)';
+            nextDropZone.style.transform = 'scale(1)';
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'text/csv') {
+                const input = document.getElementById('nextFileInput');
+                input.files = e.dataTransfer.files;
+                validateNextFile(input);
+            } else {
+                showFlashMessage('Please upload a valid CSV file', 'danger');
+            }
+        });
+
+        function handleNextFileSelection(file) {
+            nextFileInput.files = [file];
+            document.getElementById('nextFileName').textContent = file.name;
+            document.getElementById('nextSelectedFile').classList.remove('d-none');
+            document.getElementById('nextFileError').classList.add('d-none');
+            showFlashMessage('File selected successfully', 'success');
+        }
+
+        function validateNextFile(input) {
+            const file = input.files[0];
+            const errorDiv = document.getElementById('nextFileError');
+            const selectedFile = document.getElementById('nextSelectedFile');
+            const fileName = document.getElementById('nextFileName');
+            const csvPreview = document.getElementById('nextCsvPreview');
+            
+            if (!file) {
+                selectedFile.classList.add('d-none');
+                errorDiv.classList.add('d-none');
+                csvPreview.classList.add('d-none');
+                return;
+            }
+
+            // Check file type
+            if (!file.type.match('text/csv')) {
+                showFlashMessage('Please upload a valid CSV file', 'danger');
+                input.value = '';
+                selectedFile.classList.add('d-none');
+                errorDiv.textContent = 'Only CSV files are allowed';
+                errorDiv.classList.remove('d-none');
+                csvPreview.classList.add('d-none');
+                return;
+            }
+
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showFlashMessage('File size should be less than 5MB', 'danger');
+                input.value = '';
+                selectedFile.classList.add('d-none');
+                errorDiv.textContent = 'File size should be less than 5MB';
+                errorDiv.classList.remove('d-none');
+                csvPreview.classList.add('d-none');
+                return;
+            }
+
+            // If file is valid
+            fileName.textContent = file.name;
+            selectedFile.classList.remove('d-none');
+            errorDiv.classList.add('d-none');
+            showFlashMessage('File selected successfully', 'success');
+
+            // Preview CSV content
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const rows = text.split('\n').map(row => row.split(','));
+                
+                // Update header
+                const headerRow = document.getElementById('nextPreviewHeader');
+                headerRow.innerHTML = rows[0].map(col => `<th>${col.trim()}</th>`).join('');
+                
+                // Update body with animation
+                const previewBody = document.getElementById('nextPreviewBody');
+                previewBody.style.opacity = '0';
+                previewBody.innerHTML = rows.slice(1, 6).map(row => 
+                    `<tr>${row.map(col => `<td>${col.trim()}</td>`).join('')}</tr>`
+                ).join('');
+                
+                csvPreview.classList.remove('d-none');
+                requestAnimationFrame(() => {
+                    previewBody.style.opacity = '1';
+                    previewBody.style.transition = 'opacity 0.3s ease';
+                });
+            };
+            reader.readAsText(file);
+        }
+
+        function toggleNextPreview() {
+            const csvPreview = document.getElementById('nextCsvPreview');
+            const button = csvPreview.querySelector('button');
+            const icon = button.querySelector('i');
+            
+            if (csvPreview.classList.contains('d-none')) {
+                csvPreview.classList.remove('d-none');
+                icon.className = 'fas fa-eye-slash';
+                button.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Preview';
+            } else {
+                csvPreview.classList.add('d-none');
+                icon.className = 'fas fa-eye';
+                button.innerHTML = '<i class="fas fa-eye"></i> Show Preview';
+            }
+        }
+
+        function validateNextFileForm(event) {
+            event.preventDefault();
+            
+            const numRooms = document.getElementById('next_num_rooms').value;
+            const seatsPerRoom = document.getElementById('next_seats_per_room').value;
+            const fileInput = document.getElementById('nextFileInput');
+            
+            if (!numRooms || !seatsPerRoom) {
+                showFlashMessage('Please fill in all fields', 'warning');
+                return false;
+            }
+            
+            if (numRooms < 1 || numRooms > 20) {
+                showFlashMessage('Number of rooms must be between 1 and 20', 'warning');
+                return false;
+            }
+            
+            if (seatsPerRoom < 1 || seatsPerRoom > 100) {
+                showFlashMessage('Seats per room must be between 1 and 100', 'warning');
+                return false;
+            }
+            
+            if (!fileInput.files[0]) {
+                showFlashMessage('Please select a CSV file', 'warning');
+                return false;
+            }
+            
+            // Show loading state
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            showLoading();
+            
+            // Submit the form
+            event.target.submit();
+            return true;
+        }
+
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        const icon = themeToggle.querySelector('i');
+
+        // Check for saved theme preference
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        html.setAttribute('data-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            // Add transition class
+            html.classList.add('theme-transition');
+            
+            // Update theme
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+            
+            // Remove transition class after animation
+            setTimeout(() => {
+                html.classList.remove('theme-transition');
+            }, 400);
+        });
+
+        function updateThemeIcon(theme) {
+            icon.className = theme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+            icon.style.transform = theme === 'dark' ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        // Add smooth transition for theme changes
+        document.documentElement.style.setProperty('--transition-duration', '0.4s');
+    </script>
 </body>
 </html>

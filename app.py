@@ -395,8 +395,6 @@ def process_seating():
 @app.route('/process', methods=['POST'])
 def process_next_file():
     try:
-        cleanup_old_storage()  # Clean up storage before processing new request
-        
         num_rooms = int(request.form.get('num_rooms', 4))           
         seats_per_room = int(request.form.get('seats_per_room', 25))
         
@@ -413,32 +411,31 @@ def process_next_file():
         if not allowed_file(file.filename):
             raise ValueError("Only CSV files are allowed")
         
+        # Create unique filename to prevent overwriting
+        file_ext = file.filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{str(uuid.uuid4())}.{file_ext}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        
+        # Save file
+        file.save(filepath)
+        
+        # Validate CSV content
         try:
-            # Read file content into memory with size limit (5MB)
-            file_content = file.read(5 * 1024 * 1024)  # 5MB limit
-            if len(file_content) >= 5 * 1024 * 1024:
-                raise ValueError("File size exceeds 5MB limit")
-            
-            file_id = str(uuid.uuid4())
-            UPLOAD_STORAGE[file_id] = file_content.decode('utf-8')
-            
-            # Validate CSV content
-            df = pd.read_csv(StringIO(UPLOAD_STORAGE[file_id]))
+            df = pd.read_csv(filepath)
             validate_csv(df)
-            
-            return redirect(url_for('process_seating',
-                                  file_id=file_id,
-                                  num_rooms=num_rooms,
-                                  seats_per_room=seats_per_room))
-        except UnicodeDecodeError:
-            raise ValueError("Invalid file encoding. Please ensure the file is UTF-8 encoded")
-        except pd.errors.EmptyDataError:
-            raise ValueError("The CSV file is empty")
-        except pd.errors.ParserError:
-            raise ValueError("Invalid CSV format")
+        except Exception as e:
+            # Clean up invalid file
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            raise ValueError(f"Invalid CSV file: {str(e)}")
+        
+        # If everything is valid, redirect to process
+        return redirect(url_for('process_seating',
+                              filename=unique_filename,
+                              num_rooms=num_rooms,
+                              seats_per_room=seats_per_room))
         
     except Exception as e:
-        logger.error(f"Error in process_next_file route: {str(e)}", exc_info=True)
         flash(str(e), 'danger')
         return redirect(url_for('index'))
 
@@ -541,13 +538,18 @@ def download_pdf():
 
 @app.route('/clear-session')
 def clear_session():
-    # No need to clean up files in serverless environment
+    # Also remove any files associated with the session
     try:
-        # Clear session
-        session.clear()
-        logger.info("Session cleared successfully")
+        if 'seating_data' in session and 'filename' in session['seating_data']:
+            filename = session['seating_data']['filename']
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.exists(filepath):
+                os.remove(filepath)
     except Exception as e:
-        logger.error(f"Error clearing session: {str(e)}", exc_info=True)
+        app.logger.error(f"Error removing file: {str(e)}")
+    
+    # Clear session
+    session.clear()
     return redirect(url_for('index'))
 
 @app.route('/credits')
