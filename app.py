@@ -44,11 +44,12 @@ def handle_exception(e):
 
 # Serverless-friendly configuration
 app.config.update(
-    SECRET_KEY=os.environ.get('FLASK_SECRET_KEY', 'your-secure-random-key-here'),
+    SECRET_KEY=os.environ.get('FLASK_SECRET_KEY', 'your-secure-random-key'),
     PERMANENT_SESSION_LIFETIME=timedelta(hours=1),
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax'
+    SESSION_COOKIE_SAMESITE='Lax',
+    DATABASE_URL=os.environ.get('DATABASE_URL', 'your-database-url')
 )
 
 # Create an in-memory storage for file uploads with size limit
