@@ -104,6 +104,17 @@ This application is configured for easy deployment to Vercel's serverless platfo
 
 For detailed instructions, see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md).
 
+### Troubleshooting Vercel Deployment
+
+If you encounter issues when deploying to Vercel, we've included several files to help:
+
+- `vercel.json` - Specifies the Python runtime (3.9) and build configuration
+- `build.sh` - Custom build script for installing dependencies
+- `constraints.txt` - Helps resolve dependency conflicts
+- `pip.conf` - Configures pip behavior during installation
+
+For detailed troubleshooting information, see [VERCEL_TROUBLESHOOTING.md](VERCEL_TROUBLESHOOTING.md).
+
 ## CSV File Format
 
 Your CSV file should have the following structure:
